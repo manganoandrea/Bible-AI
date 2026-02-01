@@ -1,11 +1,6 @@
-import { View, Text } from "react-native";
+import { Redirect } from "expo-router";
 
 export default function Index() {
-  return (
-    <View className="flex-1 items-center justify-center bg-cream">
-      <Text className="font-nunito-bold text-charcoal text-2xl">
-        Bible-AI
-      </Text>
-    </View>
-  );
+  // TODO: Check auth state and redirect accordingly
+  return <Redirect href="/(onboarding)/welcome" />;
 }

@@ -35,7 +35,11 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <StatusBar style="dark" />
-      <Stack screenOptions={{ headerShown: false }} />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(onboarding)" />
+        <Stack.Screen name="(main)" />
+        <Stack.Screen name="story/[id]" options={{ animation: "none" }} />
+      </Stack>
     </SafeAreaProvider>
   );
 }
