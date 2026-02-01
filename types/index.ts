@@ -1,9 +1,8 @@
+import type { AgeBand, Value } from "./story";
+import type { CompanionType } from "./companion";
+
 export * from "./companion";
 export * from "./story";
-
-export type AgeBand = import("./story").AgeBand;
-export type CompanionType = import("./companion").CompanionType;
-export type Value = import("./story").Value;
 
 export interface User {
   id: string;
