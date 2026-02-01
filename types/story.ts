@@ -1,0 +1,55 @@
+export type AgeBand = "3-5" | "6-8" | "9-11";
+
+export type Value =
+  | "Kindness"
+  | "Courage"
+  | "Honesty"
+  | "Patience"
+  | "Gratitude"
+  | "Forgiveness"
+  | "Humility"
+  | "Self-control";
+
+export const ALL_VALUES: Value[] = [
+  "Kindness",
+  "Courage",
+  "Honesty",
+  "Patience",
+  "Gratitude",
+  "Forgiveness",
+  "Humility",
+  "Self-control",
+];
+
+export type StoryType = "premade" | "personalized";
+
+export type StoryStatus = "generating" | "ready" | "failed";
+
+export interface StoryChoice {
+  label: string;
+  iconUrl: string;
+  nextSlideId: string;
+  valueTag: Value;
+}
+
+export interface StorySlide {
+  slideId: string;
+  text: string;
+  imageUrl: string;
+  audioUrl: string;
+  isChoicePoint: boolean;
+  choices?: StoryChoice[];
+}
+
+export interface Story {
+  id: string;
+  profileId: string | null;
+  type: StoryType;
+  title: string;
+  coverImageUrl: string;
+  slides: StorySlide[];
+  branchSlides: StorySlide[];
+  valuesReinforced: Value[];
+  status: StoryStatus;
+  createdAt: Date;
+}
