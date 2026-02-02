@@ -3,9 +3,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { PreparationStepper } from "@/components/onboarding/PreparationStepper";
-import { useOnboardingStore, useAuthStore, useProfileStore } from "@/stores";
+import { useOnboardingStore, useAuthStore, useProfileStore, useStoryStore } from "@/stores";
 import { createProfile } from "@/lib/firebaseProfile";
-import { createStoryDoc, onStoryStatusChange } from "@/lib/firebaseStory";
+import { createStoryDoc, onStoryStatusChange, getStory } from "@/lib/firebaseStory";
 
 export default function GeneratingScreen() {
   const router = useRouter();
@@ -13,6 +13,7 @@ export default function GeneratingScreen() {
     useOnboardingStore();
   const user = useAuthStore((s) => s.user);
   const setProfile = useProfileStore((s) => s.setProfile);
+  const setCurrentStory = useStoryStore((s) => s.setCurrentStory);
   const [storyId, setStoryId] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -60,9 +61,14 @@ export default function GeneratingScreen() {
   useEffect(() => {
     if (!storyId) return;
 
-    const unsubscribe = onStoryStatusChange(storyId, (status) => {
-      if (status === "ready") {
-        setProgress(1);
+    const unsubscribe = onStoryStatusChange(storyId, async (status) => {
+      if (status === "cover_ready" || status === "ready") {
+        // Fetch the story and set it in the store
+        const story = await getStory(storyId);
+        if (story) {
+          setCurrentStory(story);
+          setProgress(1);
+        }
       } else if (status === "failed") {
         // TODO: Handle failure — show retry
         setProgress(0);
@@ -70,11 +76,12 @@ export default function GeneratingScreen() {
     });
 
     return unsubscribe;
-  }, [storyId]);
+  }, [storyId, setCurrentStory]);
 
   const handleComplete = useCallback(() => {
     if (storyId) {
-      router.replace(`/story/${storyId}`);
+      // Navigate to cover reveal screen
+      router.replace("/(onboarding)/cover-reveal");
     }
   }, [router, storyId]);
 
