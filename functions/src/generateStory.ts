@@ -1,0 +1,225 @@
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import * as admin from "firebase-admin";
+import { AgeBand, CompanionType, Value } from "./prompts/types";
+import { buildStoryPrompt } from "./prompts/storyPrompt";
+import { buildImagePrompt, buildCoverPrompt, COMPANION_DNA } from "./prompts/imagePrompt";
+
+interface Slide {
+  id: string;
+  text: string;
+  imageDescription: string;
+  imagePrompt?: string;
+  isChoicePoint?: boolean;
+  choices?: {
+    A: { label: string; description: string };
+    B: { label: string; description: string };
+  };
+}
+
+interface StoryChoice {
+  label: string;
+  description: string;
+}
+
+interface StoryGenerationResult {
+  title: string;
+  slides: Slide[];
+  choicePointSlideId: string;
+  choices: {
+    A: StoryChoice;
+    B: StoryChoice;
+  };
+  branchSlides: {
+    A: Slide[];
+    B: Slide[];
+  };
+}
+
+interface GenerateStoryParams {
+  storyId: string;
+  childName: string;
+  ageBand: AgeBand;
+  companionType: CompanionType;
+  companionName: string;
+  values: Value[];
+}
+
+/**
+ * Extracts JSON from a string that may contain markdown code blocks or other text.
+ */
+function extractJson(text: string): string {
+  // Try to find JSON in code blocks first
+  const codeBlockMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (codeBlockMatch) {
+    return codeBlockMatch[1].trim();
+  }
+
+  // Try to find raw JSON object
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    return jsonMatch[0];
+  }
+
+  return text.trim();
+}
+
+/**
+ * Validates the parsed story structure.
+ */
+function validateStoryStructure(data: unknown): data is StoryGenerationResult {
+  if (!data || typeof data !== "object") return false;
+
+  const story = data as Record<string, unknown>;
+
+  if (typeof story.title !== "string") return false;
+  if (!Array.isArray(story.slides)) return false;
+  if (typeof story.choicePointSlideId !== "string") return false;
+  if (!story.choices || typeof story.choices !== "object") return false;
+  if (!story.branchSlides || typeof story.branchSlides !== "object") return false;
+
+  // Validate slides have required fields
+  for (const slide of story.slides) {
+    if (!slide || typeof slide !== "object") return false;
+    const s = slide as Record<string, unknown>;
+    if (typeof s.id !== "string" || typeof s.text !== "string") return false;
+  }
+
+  // Validate branch slides
+  const branches = story.branchSlides as Record<string, unknown>;
+  if (!Array.isArray(branches.A) || !Array.isArray(branches.B)) return false;
+
+  return true;
+}
+
+/**
+ * Main story generation orchestrator.
+ * Calls Gemini API to generate story structure, then processes and stores results.
+ */
+export async function generateStory(params: GenerateStoryParams): Promise<void> {
+  const { storyId, childName, ageBand, companionType, companionName, values } = params;
+  const db = admin.firestore();
+  const storyRef = db.collection("stories").doc(storyId);
+
+  try {
+    // Initialize Gemini
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error("GEMINI_API_KEY environment variable is not set");
+    }
+
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+
+    // Build the story prompt
+    const storyPrompt = buildStoryPrompt({
+      ageBand,
+      companionType,
+      companionName,
+      values,
+      childName,
+    });
+
+    // Generate story with Gemini
+    console.log(`Generating story for storyId: ${storyId}`);
+    const result = await model.generateContent(storyPrompt);
+    const response = result.response;
+    const responseText = response.text();
+
+    // Extract and parse JSON
+    const jsonText = extractJson(responseText);
+    let storyData: StoryGenerationResult;
+
+    try {
+      storyData = JSON.parse(jsonText) as StoryGenerationResult;
+    } catch (parseError) {
+      console.error("Failed to parse story JSON:", parseError);
+      console.error("Raw response:", responseText);
+      throw new Error("Failed to parse story structure from AI response");
+    }
+
+    // Validate story structure
+    if (!validateStoryStructure(storyData)) {
+      console.error("Invalid story structure:", storyData);
+      throw new Error("Generated story has invalid structure");
+    }
+
+    // Process slides - add image prompts
+    const processedSlides: Slide[] = storyData.slides.map((slide) => {
+      const isChoicePoint = slide.id === storyData.choicePointSlideId;
+
+      const processedSlide: Slide = {
+        ...slide,
+        imagePrompt: buildImagePrompt({
+          sceneDescription: slide.imageDescription,
+          companionType,
+          companionName,
+          childName,
+        }),
+      };
+
+      // Attach choices to the choice point slide
+      if (isChoicePoint) {
+        processedSlide.isChoicePoint = true;
+        processedSlide.choices = storyData.choices;
+      }
+
+      return processedSlide;
+    });
+
+    // Process branch slides - add image prompts
+    const processedBranchSlides = {
+      A: storyData.branchSlides.A.map((slide) => ({
+        ...slide,
+        imagePrompt: buildImagePrompt({
+          sceneDescription: slide.imageDescription,
+          companionType,
+          companionName,
+          childName,
+        }),
+      })),
+      B: storyData.branchSlides.B.map((slide) => ({
+        ...slide,
+        imagePrompt: buildImagePrompt({
+          sceneDescription: slide.imageDescription,
+          companionType,
+          companionName,
+          childName,
+        }),
+      })),
+    };
+
+    // Generate cover prompt
+    const coverPrompt = buildCoverPrompt({
+      title: storyData.title,
+      companionType,
+      companionName,
+      childName,
+    });
+
+    // Update Firestore with generated story
+    await storyRef.update({
+      status: "ready",
+      title: storyData.title,
+      slides: processedSlides,
+      branchSlides: processedBranchSlides,
+      choicePointSlideId: storyData.choicePointSlideId,
+      coverPrompt,
+      companionDna: COMPANION_DNA[companionType],
+      generatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    console.log(`Story generation complete for storyId: ${storyId}`);
+  } catch (error) {
+    console.error(`Story generation failed for storyId: ${storyId}`, error);
+
+    // Update Firestore with failed status
+    await storyRef.update({
+      status: "failed",
+      error: error instanceof Error ? error.message : "Unknown error occurred",
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    throw error;
+  }
+}
