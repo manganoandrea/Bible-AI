@@ -1,6 +1,7 @@
 import * as admin from "firebase-admin";
 import { generateImage } from "./imagen";
-import { uploadImageToStorage } from "./storage";
+import { generateAudio } from "./tts";
+import { uploadImageToStorage, uploadAudioToStorage } from "./storage";
 import { buildImagePrompt } from "./prompts/imagePrompt";
 import type { CompanionType } from "./prompts/types";
 
@@ -60,6 +61,21 @@ export async function generateSlideImages(params: SlideImageParams): Promise<voi
 
         mainSlides[slideIndex].imageUrl = imageUrl;
         mainSlides[slideIndex].imageStatus = "ready";
+
+        // Generate audio for this slide
+        try {
+          const audioBytes = await generateAudio(slide.text);
+          const audioUrl = await uploadAudioToStorage(
+            storyId,
+            `${slide.id}.mp3`,
+            audioBytes
+          );
+          mainSlides[slideIndex].audioUrl = audioUrl;
+          mainSlides[slideIndex].audioStatus = "ready";
+        } catch (audioError) {
+          console.error(`Failed to generate audio for slide ${slide.id}:`, audioError);
+          mainSlides[slideIndex].audioStatus = "failed";
+        }
       } catch (error) {
         console.error(`Failed to generate image for slide ${slide.id}:`, error);
         mainSlides[slideIndex].imageStatus = "failed";
@@ -96,6 +112,21 @@ export async function generateSlideImages(params: SlideImageParams): Promise<voi
 
         branchASlides[slideIndex].imageUrl = imageUrl;
         branchASlides[slideIndex].imageStatus = "ready";
+
+        // Generate audio for this slide
+        try {
+          const audioBytes = await generateAudio(slide.text);
+          const audioUrl = await uploadAudioToStorage(
+            storyId,
+            `branch-a-${slide.id}.mp3`,
+            audioBytes
+          );
+          branchASlides[slideIndex].audioUrl = audioUrl;
+          branchASlides[slideIndex].audioStatus = "ready";
+        } catch (audioError) {
+          console.error(`Failed to generate audio for branch A slide ${slide.id}:`, audioError);
+          branchASlides[slideIndex].audioStatus = "failed";
+        }
       } catch (error) {
         console.error(`Failed to generate image for branch A slide ${slide.id}:`, error);
         branchASlides[slideIndex].imageStatus = "failed";
@@ -135,6 +166,21 @@ export async function generateSlideImages(params: SlideImageParams): Promise<voi
 
         branchBSlides[slideIndex].imageUrl = imageUrl;
         branchBSlides[slideIndex].imageStatus = "ready";
+
+        // Generate audio for this slide
+        try {
+          const audioBytes = await generateAudio(slide.text);
+          const audioUrl = await uploadAudioToStorage(
+            storyId,
+            `branch-b-${slide.id}.mp3`,
+            audioBytes
+          );
+          branchBSlides[slideIndex].audioUrl = audioUrl;
+          branchBSlides[slideIndex].audioStatus = "ready";
+        } catch (audioError) {
+          console.error(`Failed to generate audio for branch B slide ${slide.id}:`, audioError);
+          branchBSlides[slideIndex].audioStatus = "failed";
+        }
       } catch (error) {
         console.error(`Failed to generate image for branch B slide ${slide.id}:`, error);
         branchBSlides[slideIndex].imageStatus = "failed";
