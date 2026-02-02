@@ -3,6 +3,8 @@ import * as admin from "firebase-admin";
 import { AgeBand, CompanionType, Value } from "./prompts/types";
 import { buildStoryPrompt } from "./prompts/storyPrompt";
 import { buildImagePrompt, buildCoverPrompt, COMPANION_DNA } from "./prompts/imagePrompt";
+import { uploadImageToStorage } from "./storage";
+import { generateImage } from "./imagen";
 
 /**
  * Sanitizes user input to prevent prompt injection attacks.
@@ -47,6 +49,7 @@ interface StoryGenerationResult {
     A: Slide[];
     B: Slide[];
   };
+  valuesReinforced?: Value[];
 }
 
 interface GenerateStoryParams {
@@ -160,6 +163,9 @@ export async function generateStory(params: GenerateStoryParams): Promise<void> 
       throw new Error("Generated story has invalid structure");
     }
 
+    // Update status to text_ready after successful text generation
+    await storyRef.update({ status: "text_ready" });
+
     // Process slides - add image prompts
     const processedSlides: Slide[] = storyData.slides.map((slide) => {
       const isChoicePoint = slide.id === storyData.choicePointSlideId;
@@ -208,23 +214,56 @@ export async function generateStory(params: GenerateStoryParams): Promise<void> 
       })),
     };
 
-    // Generate cover prompt
+    // Generate cover prompt and image
     const coverPrompt = buildCoverPrompt({
       title: storyData.title,
       companionType,
       companionName,
-      childName,
+      childName: childName || "the child",
     });
 
-    // Update Firestore with generated story
+    const coverImageBytes = await generateImage(coverPrompt);
+    const coverImageUrl = await uploadImageToStorage(
+      storyId,
+      "cover.png",
+      coverImageBytes
+    );
+
+    // Calculate total images needed for all slides
+    const totalImages = processedSlides.length +
+      (processedBranchSlides?.A?.length || 0) +
+      (processedBranchSlides?.B?.length || 0);
+
+    // Add imageStatus: "pending" to all slides
+    const slidesWithStatus = processedSlides.map((s: any) => ({
+      ...s,
+      imageStatus: "pending",
+    }));
+
+    const branchSlidesWithStatus = {
+      A: processedBranchSlides.A.map((s: any) => ({
+        ...s,
+        imageStatus: "pending",
+      })),
+      B: processedBranchSlides.B.map((s: any) => ({
+        ...s,
+        imageStatus: "pending",
+      })),
+    };
+
+    // Update Firestore with generated story and cover_ready status
     await storyRef.update({
-      status: "ready",
       title: storyData.title,
-      slides: processedSlides,
-      branchSlides: processedBranchSlides,
+      coverImageUrl,
+      slides: slidesWithStatus,
+      branchSlides: branchSlidesWithStatus,
       choicePointSlideId: storyData.choicePointSlideId,
       coverPrompt,
       companionDna: COMPANION_DNA[companionType],
+      valuesReinforced: storyData.valuesReinforced || values,
+      status: "cover_ready",
+      imagesGenerated: 0,
+      totalImages,
       generatedAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
