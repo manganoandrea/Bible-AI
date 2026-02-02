@@ -1,11 +1,15 @@
-import { View, Image, ActivityIndicator, Text } from "react-native";
+import { View, Image, ActivityIndicator, Text, Pressable } from "react-native";
 import { TextBubble } from "./TextBubble";
+import { useStoryAudio } from "@/hooks/useStoryAudio";
 
 type ImageStatus = "pending" | "generating" | "ready" | "failed";
+type AudioStatus = "pending" | "generating" | "ready" | "failed";
 
 interface StorySlideViewProps {
   imageUrl: string;
   imageStatus: ImageStatus;
+  audioUrl: string;
+  audioStatus: AudioStatus;
   text: string;
   showText: boolean;
 }
@@ -13,9 +17,17 @@ interface StorySlideViewProps {
 export function StorySlideView({
   imageUrl,
   imageStatus,
+  audioUrl,
+  audioStatus,
   text,
   showText,
 }: StorySlideViewProps) {
+  const { isPlaying, isLoaded, play, pause, replay } = useStoryAudio({
+    audioUrl,
+    audioStatus,
+    autoPlay: true,
+  });
+
   const renderImage = () => {
     // Show image if ready and URL exists
     if (imageStatus === "ready" && imageUrl) {
@@ -61,6 +73,25 @@ export function StorySlideView({
       <View className="flex-1 bg-charcoal items-center justify-center">
         {renderImage()}
       </View>
+
+      {/* Audio controls */}
+      {audioStatus === "ready" && isLoaded && (
+        <View className="absolute top-4 right-4 flex-row gap-2">
+          <Pressable
+            onPress={isPlaying ? pause : play}
+            className="bg-white/80 rounded-full w-10 h-10 items-center justify-center"
+          >
+            <Text className="text-lg">{isPlaying ? "⏸" : "▶️"}</Text>
+          </Pressable>
+          <Pressable
+            onPress={replay}
+            className="bg-white/80 rounded-full w-10 h-10 items-center justify-center"
+          >
+            <Text className="text-lg">🔄</Text>
+          </Pressable>
+        </View>
+      )}
+
       <TextBubble text={text} visible={showText} />
     </View>
   );
