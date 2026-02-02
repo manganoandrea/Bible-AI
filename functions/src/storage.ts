@@ -1,6 +1,8 @@
 import * as admin from "firebase-admin";
 
-const storage = admin.storage();
+function getStorage() {
+  return admin.storage();
+}
 
 /**
  * Uploads a base64-encoded image to Firebase Storage.
@@ -15,7 +17,7 @@ export async function uploadImageToStorage(
   imageName: string,
   imageBytes: string // base64
 ): Promise<string> {
-  const bucket = storage.bucket();
+  const bucket = getStorage().bucket();
   const filePath = `stories/${storyId}/${imageName}`;
   const file = bucket.file(filePath);
 
@@ -46,7 +48,7 @@ export async function uploadAudioToStorage(
   audioName: string,
   audioBytes: string // base64
 ): Promise<string> {
-  const bucket = storage.bucket();
+  const bucket = getStorage().bucket();
   const filePath = `stories/${storyId}/audio/${audioName}`;
   const file = bucket.file(filePath);
 

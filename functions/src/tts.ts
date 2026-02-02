@@ -1,9 +1,16 @@
 import { TextToSpeechClient } from "@google-cloud/text-to-speech";
 
-const client = new TextToSpeechClient();
-
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1000;
+
+let client: TextToSpeechClient | null = null;
+
+function getClient(): TextToSpeechClient {
+  if (!client) {
+    client = new TextToSpeechClient();
+  }
+  return client;
+}
 
 async function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -23,7 +30,7 @@ export async function generateAudio(text: string): Promise<string> {
     try {
       console.log(`TTS generation attempt ${attempt}/${MAX_RETRIES}`);
 
-      const [response] = await client.synthesizeSpeech({
+      const [response] = await getClient().synthesizeSpeech({
         input: { text },
         voice: {
           languageCode: "en-US",
