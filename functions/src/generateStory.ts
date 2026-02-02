@@ -4,6 +4,20 @@ import { AgeBand, CompanionType, Value } from "./prompts/types";
 import { buildStoryPrompt } from "./prompts/storyPrompt";
 import { buildImagePrompt, buildCoverPrompt, COMPANION_DNA } from "./prompts/imagePrompt";
 
+/**
+ * Sanitizes user input to prevent prompt injection attacks.
+ * Removes newlines, control characters, and special prompt injection patterns.
+ */
+function sanitizeUserInput(input: string | undefined, maxLength = 50): string {
+  if (!input) return "";
+  // Remove newlines, control characters, and special prompt injection patterns
+  return input
+    .replace(/[\n\r\t]/g, " ")
+    .replace(/[#*`]/g, "")
+    .slice(0, maxLength)
+    .trim();
+}
+
 interface Slide {
   id: string;
   text: string;
@@ -96,7 +110,10 @@ function validateStoryStructure(data: unknown): data is StoryGenerationResult {
  * Calls Gemini API to generate story structure, then processes and stores results.
  */
 export async function generateStory(params: GenerateStoryParams): Promise<void> {
-  const { storyId, childName, ageBand, companionType, companionName, values } = params;
+  const { storyId, ageBand, companionType, values } = params;
+  // Sanitize user-provided strings to prevent prompt injection
+  const childName = sanitizeUserInput(params.childName);
+  const companionName = sanitizeUserInput(params.companionName);
   const db = admin.firestore();
   const storyRef = db.collection("stories").doc(storyId);
 

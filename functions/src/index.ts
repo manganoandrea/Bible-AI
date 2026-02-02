@@ -11,7 +11,7 @@ admin.initializeApp();
  * Only processes documents where type === "personalized" and status === "generating".
  */
 export const onStoryCreated = onDocumentCreated(
-  "stories/{storyId}",
+  { document: "stories/{storyId}", timeoutSeconds: 300, memory: "1GiB" },
   async (event) => {
     const snapshot = event.data;
     if (!snapshot) {
@@ -66,6 +66,17 @@ export const onStoryCreated = onDocumentCreated(
         await snapshot.ref.update({
           status: "failed",
           error: "Profile data is empty",
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        return;
+      }
+
+      // Validate required fields exist before type assertions
+      if (!profile.ageBand || !profile.companionType || !profile.values) {
+        console.error("Invalid profile data:", profileId);
+        await snapshot.ref.update({
+          status: "failed",
+          error: "Invalid profile data: missing required fields",
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         });
         return;
