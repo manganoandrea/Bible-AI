@@ -152,6 +152,8 @@ export default function StoryPlayerScreen() {
       <StorySlideView
         imageUrl={currentSlide.imageUrl}
         imageStatus={currentSlide.imageStatus}
+        audioUrl={currentSlide.audioUrl}
+        audioStatus={currentSlide.audioStatus}
         text={currentSlide.text}
         showText={showText}
       />
