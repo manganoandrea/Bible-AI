@@ -1,92 +1,50 @@
-import { View, Pressable, Text } from "react-native";
+import { View, Pressable, Text, ActivityIndicator } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { StatusBar } from "expo-status-bar";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import { StorySlideView } from "@/components/player/StorySlideView";
-import type { StorySlide } from "@/types";
-
-// TODO: Replace with real story data from Firestore
-const MOCK_SLIDES: StorySlide[] = [
-  {
-    slideId: "1",
-    text: "Once upon a time, in a land of rolling green hills, a little lamb named Sunny set out on an adventure.",
-    imageUrl: "",
-    imageStatus: "ready",
-    audioUrl: "",
-    audioStatus: "ready",
-    isChoicePoint: false,
-  },
-  {
-    slideId: "2",
-    text: "Sunny walked along a winding path, the warm sun painting golden light across the meadow.",
-    imageUrl: "",
-    imageStatus: "ready",
-    audioUrl: "",
-    audioStatus: "ready",
-    isChoicePoint: false,
-  },
-  {
-    slideId: "3",
-    text: "At the crossroads, Sunny saw two paths. One led to a quiet village, the other into a mysterious forest.",
-    imageUrl: "",
-    imageStatus: "ready",
-    audioUrl: "",
-    audioStatus: "ready",
-    isChoicePoint: true,
-    choices: [
-      {
-        label: "Visit the village",
-        iconUrl: "",
-        nextSlideId: "4a",
-        valueTag: "Kindness",
-      },
-      {
-        label: "Explore the forest",
-        iconUrl: "",
-        nextSlideId: "4b",
-        valueTag: "Courage",
-      },
-    ],
-  },
-  {
-    slideId: "4a",
-    text: "Sunny chose the village, where friendly faces welcomed them with warm smiles. Kindness filled the air.",
-    imageUrl: "",
-    imageStatus: "ready",
-    audioUrl: "",
-    audioStatus: "ready",
-    isChoicePoint: false,
-  },
-  {
-    slideId: "4b",
-    text: "Sunny bravely stepped into the forest, where tall trees whispered ancient stories of courage.",
-    imageUrl: "",
-    imageStatus: "ready",
-    audioUrl: "",
-    audioStatus: "ready",
-    isChoicePoint: false,
-  },
-  {
-    slideId: "5",
-    text: "And so Sunny learned that every choice leads to something wonderful. The end.",
-    imageUrl: "",
-    imageStatus: "ready",
-    audioUrl: "",
-    audioStatus: "ready",
-    isChoicePoint: false,
-  },
-];
+import { subscribeToStory } from "@/lib/firebaseStory";
+import type { Story, StorySlide } from "@/types";
 
 export default function StoryPlayerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const [story, setStory] = useState<Story | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
-  const [slideHistory, setSlideHistory] = useState<string[]>(["1"]);
+  const [slideHistory, setSlideHistory] = useState<string[]>([]);
   const [showText, setShowText] = useState(true);
   const [showControls, setShowControls] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
+
+  // Combine slides and branchSlides into a single lookup map
+  const allSlides = useMemo(() => {
+    if (!story) return new Map<string, StorySlide>();
+    const map = new Map<string, StorySlide>();
+    story.slides.forEach((slide) => map.set(slide.slideId, slide));
+    story.branchSlides?.forEach((slide) => map.set(slide.slideId, slide));
+    return map;
+  }, [story]);
+
+  // Subscribe to story updates from Firestore
+  useEffect(() => {
+    if (!id) return;
+
+    setIsLoading(true);
+    const unsubscribe = subscribeToStory(id, (updatedStory) => {
+      setStory(updatedStory);
+      setIsLoading(false);
+
+      // Initialize slide history with first slide if not set
+      if (updatedStory?.slides.length && slideHistory.length === 0) {
+        setSlideHistory([updatedStory.slides[0].slideId]);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [id]);
 
   // Lock to landscape on mount
   useEffect(() => {
@@ -108,21 +66,23 @@ export default function StoryPlayerScreen() {
   }, [showControls]);
 
   const currentSlideId = slideHistory[currentSlideIndex];
-  const currentSlide = MOCK_SLIDES.find((s) => s.slideId === currentSlideId);
+  const currentSlide = currentSlideId ? allSlides.get(currentSlideId) : null;
 
   const handleNext = useCallback(() => {
-    if (!currentSlide || currentSlide.isChoicePoint) return;
+    if (!currentSlide || currentSlide.isChoicePoint || !story) return;
 
-    const currentIdx = MOCK_SLIDES.findIndex(
+    // Find next slide in the main slides array
+    const currentIdx = story.slides.findIndex(
       (s) => s.slideId === currentSlideId
     );
-    const nextSlide = MOCK_SLIDES[currentIdx + 1];
-    if (!nextSlide) return;
 
-    const newHistory = [...slideHistory.slice(0, currentSlideIndex + 1), nextSlide.slideId];
-    setSlideHistory(newHistory);
-    setCurrentSlideIndex(newHistory.length - 1);
-  }, [currentSlide, currentSlideId, currentSlideIndex, slideHistory]);
+    if (currentIdx >= 0 && currentIdx < story.slides.length - 1) {
+      const nextSlide = story.slides[currentIdx + 1];
+      const newHistory = [...slideHistory.slice(0, currentSlideIndex + 1), nextSlide.slideId];
+      setSlideHistory(newHistory);
+      setCurrentSlideIndex(newHistory.length - 1);
+    }
+  }, [currentSlide, currentSlideId, currentSlideIndex, slideHistory, story]);
 
   const handlePrev = useCallback(() => {
     if (currentSlideIndex > 0) {
@@ -143,7 +103,51 @@ export default function StoryPlayerScreen() {
     router.back();
   }, [router]);
 
-  if (!currentSlide) return null;
+  // Loading state
+  if (isLoading) {
+    return (
+      <View className="flex-1 bg-charcoal items-center justify-center">
+        <ActivityIndicator size="large" color="#FFB356" />
+        <Text className="font-nunito text-cream mt-4">Loading story...</Text>
+      </View>
+    );
+  }
+
+  // Error state - story not found
+  if (!story) {
+    return (
+      <View className="flex-1 bg-charcoal items-center justify-center">
+        <Text className="font-nunito text-cream text-lg">Story not found</Text>
+        <Pressable
+          className="mt-4 bg-gold px-6 py-3 rounded-full"
+          onPress={handleClose}
+        >
+          <Text className="font-nunito-bold text-charcoal">Go Back</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  // Still generating - no slides yet
+  if (!currentSlide) {
+    return (
+      <View className="flex-1 bg-charcoal items-center justify-center">
+        <ActivityIndicator size="large" color="#FFB356" />
+        <Text className="font-nunito text-cream mt-4">
+          {story.status === "generating"
+            ? "Creating your story..."
+            : story.status === "text_ready"
+            ? "Generating cover..."
+            : story.status === "cover_ready"
+            ? "Creating illustrations..."
+            : "Loading..."}
+        </Text>
+        <Text className="font-nunito text-warm-gray mt-2 text-sm">
+          {story.imagesGenerated || 0} of {story.totalImages || "?"} images ready
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View className="flex-1 bg-charcoal">

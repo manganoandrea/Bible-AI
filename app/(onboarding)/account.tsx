@@ -2,14 +2,25 @@ import { View, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Button } from "@/components/ui";
+import { signInAnonymousUser, createOrGetUserDoc } from "@/lib/firebaseAuth";
+import { useAuthStore } from "@/stores/authStore";
 
 export default function AccountScreen() {
   const router = useRouter();
+  const setUser = useAuthStore((s) => s.setUser);
 
-  const handleAuth = async (method: "apple" | "google" | "email") => {
-    // TODO: Implement actual Firebase auth for each method
-    // For now, navigate to paywall
-    router.push("/(onboarding)/paywall");
+  const handleAuth = async (method: "apple" | "google" | "email" | "anonymous") => {
+    try {
+      if (method === "anonymous") {
+        const firebaseUser = await signInAnonymousUser();
+        const user = await createOrGetUserDoc(firebaseUser, "anonymous");
+        setUser(user);
+      }
+      // TODO: Implement Apple, Google, Email auth
+      router.push("/(onboarding)/paywall");
+    } catch (error) {
+      console.error("Auth error:", error);
+    }
   };
 
   return (
@@ -56,8 +67,13 @@ export default function AccountScreen() {
           variant="secondary"
           onPress={() => handleAuth("email")}
         />
+        <Button
+          title="Continue as Guest"
+          variant="ghost"
+          onPress={() => handleAuth("anonymous")}
+        />
         <Text className="font-nunito text-xs text-warm-gray text-center mt-1">
-          We'll send a sign-in link.
+          You can create an account later.
         </Text>
       </View>
     </SafeAreaView>

@@ -4,6 +4,7 @@ import {
   sendSignInLinkToEmail,
   isSignInWithEmailLink,
   signInWithEmailLink,
+  signInAnonymously,
   signOut,
   onAuthStateChanged,
   OAuthProvider,
@@ -65,4 +66,9 @@ export async function createOrGetUserDoc(
 
 export function onAuthChange(callback: (user: FirebaseUser | null) => void) {
   return onAuthStateChanged(auth, callback);
+}
+
+export async function signInAnonymousUser(): Promise<FirebaseUser> {
+  const { user } = await signInAnonymously(auth);
+  return user;
 }

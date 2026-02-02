@@ -63,6 +63,19 @@ export function onStoryStatusChange(
   });
 }
 
+export function subscribeToStory(
+  storyId: string,
+  callback: (story: Story | null) => void
+): Unsubscribe {
+  return onSnapshot(doc(db, "stories", storyId), (snap) => {
+    if (snap.exists()) {
+      callback({ id: snap.id, ...snap.data() } as Story);
+    } else {
+      callback(null);
+    }
+  });
+}
+
 export async function getPremadeStories(): Promise<Story[]> {
   const q = query(
     collection(db, "stories"),

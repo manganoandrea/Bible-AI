@@ -7,7 +7,7 @@ export * from "./story";
 export interface User {
   id: string;
   email: string;
-  authProvider: "apple" | "google" | "email";
+  authProvider: "apple" | "google" | "email" | "anonymous";
   subscriptionStatus: "free" | "active" | "expired";
   revenuecatId: string;
   createdAt: Date;
