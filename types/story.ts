@@ -23,7 +23,12 @@ export const ALL_VALUES: Value[] = [
 
 export type StoryType = "premade" | "personalized";
 
-export type StoryStatus = "generating" | "ready" | "failed";
+export type StoryStatus =
+  | "generating" // Text being generated
+  | "text_ready" // Text done, starting cover
+  | "cover_ready" // Cover done, user can see reveal
+  | "ready" // All images done
+  | "failed";
 
 export interface StoryChoice {
   label: string;
@@ -36,6 +41,7 @@ export interface StorySlide {
   slideId: string;
   text: string;
   imageUrl: string;
+  imageStatus: "pending" | "generating" | "ready" | "failed";
   audioUrl: string;
   isChoicePoint: boolean;
   choices?: StoryChoice[];
@@ -51,5 +57,7 @@ export interface Story {
   branchSlides: StorySlide[];
   valuesReinforced: Value[];
   status: StoryStatus;
+  imagesGenerated: number;
+  totalImages: number;
   createdAt: Date;
 }
