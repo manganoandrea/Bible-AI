@@ -234,20 +234,23 @@ export async function generateStory(params: GenerateStoryParams): Promise<void> 
       (processedBranchSlides?.A?.length || 0) +
       (processedBranchSlides?.B?.length || 0);
 
-    // Add imageStatus: "pending" to all slides
+    // Add imageStatus: "pending" and audioStatus: "pending" to all slides
     const slidesWithStatus = processedSlides.map((s: any) => ({
       ...s,
       imageStatus: "pending",
+      audioStatus: "pending",
     }));
 
     const branchSlidesWithStatus = {
       A: processedBranchSlides.A.map((s: any) => ({
         ...s,
         imageStatus: "pending",
+        audioStatus: "pending",
       })),
       B: processedBranchSlides.B.map((s: any) => ({
         ...s,
         imageStatus: "pending",
+        audioStatus: "pending",
       })),
     };
 
