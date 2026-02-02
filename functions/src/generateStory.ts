@@ -108,7 +108,7 @@ export async function generateStory(params: GenerateStoryParams): Promise<void> 
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     // Build the story prompt
     const storyPrompt = buildStoryPrompt({
@@ -154,6 +154,7 @@ export async function generateStory(params: GenerateStoryParams): Promise<void> 
           companionType,
           companionName,
           childName,
+          isKeyFrame: isChoicePoint,
         }),
       };
 
@@ -168,22 +169,24 @@ export async function generateStory(params: GenerateStoryParams): Promise<void> 
 
     // Process branch slides - add image prompts
     const processedBranchSlides = {
-      A: storyData.branchSlides.A.map((slide) => ({
+      A: storyData.branchSlides.A.map((slide, index, arr) => ({
         ...slide,
         imagePrompt: buildImagePrompt({
           sceneDescription: slide.imageDescription,
           companionType,
           companionName,
           childName,
+          isKeyFrame: index === 0 || index === arr.length - 1,
         }),
       })),
-      B: storyData.branchSlides.B.map((slide) => ({
+      B: storyData.branchSlides.B.map((slide, index, arr) => ({
         ...slide,
         imagePrompt: buildImagePrompt({
           sceneDescription: slide.imageDescription,
           companionType,
           companionName,
           childName,
+          isKeyFrame: index === 0 || index === arr.length - 1,
         }),
       })),
     };

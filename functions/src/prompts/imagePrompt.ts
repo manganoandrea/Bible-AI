@@ -30,6 +30,7 @@ interface ImagePromptParams {
   companionType: CompanionType;
   companionName: string;
   childName: string;
+  isKeyFrame: boolean;
 }
 
 interface CoverPromptParams {
@@ -43,7 +44,7 @@ interface CoverPromptParams {
  * Builds a detailed image prompt for story slide illustrations.
  */
 export function buildImagePrompt(params: ImagePromptParams): string {
-  const { sceneDescription, companionType, companionName, childName } = params;
+  const { sceneDescription, companionType, companionName, childName, isKeyFrame } = params;
   const companionDna = COMPANION_DNA[companionType];
 
   return `Create a warm, inviting children's book illustration in a soft watercolor style.
@@ -61,6 +62,7 @@ Expressions should be clear and relatable.
 Approximately 6-8 years old in appearance.
 
 ## ART STYLE REQUIREMENTS
+- ${isKeyFrame ? "Detailed, fully rendered scene" : "Softer, more atmospheric rendering"}
 - Soft, dreamy watercolor aesthetic with gentle color palette
 - Warm, golden lighting suggesting hope and comfort
 - Biblical-era inspired backgrounds when appropriate (simple villages, fields, nature)
