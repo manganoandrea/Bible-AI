@@ -1,7 +1,9 @@
-import { View, Text, ScrollView, Pressable } from "react-native";
+import { View, Text, ScrollView, Pressable, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import { useProfileStore, useStoryStore } from "@/stores";
+import { getStoriesForProfile } from "@/lib/firebaseStory";
 import { CreateStoryCard } from "@/components/home/CreateStoryCard";
 import { StoryBookCard } from "@/components/home/StoryBookCard";
 
@@ -16,6 +18,8 @@ export default function HomeScreen() {
   const router = useRouter();
   const profile = useProfileStore((s) => s.profile);
   const stories = useStoryStore((s) => s.stories);
+  const setStories = useStoryStore((s) => s.setStories);
+  const [isLoading, setIsLoading] = useState(true);
 
   const childName = profile?.childName || "friend";
   const companionName =
@@ -24,9 +28,29 @@ export default function HomeScreen() {
       (profile?.companionType?.slice(1) || "") ||
     "Companion";
 
+  // Load stories from Firestore on mount
+  useEffect(() => {
+    async function loadStories() {
+      if (!profile?.id) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const userStories = await getStoriesForProfile(profile.id);
+        setStories(userStories);
+      } catch (error) {
+        console.error("Failed to load stories:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadStories();
+  }, [profile?.id, setStories]);
+
   const handleCreateStory = () => {
-    // TODO: Trigger generation pipeline, navigate to preparation screen
-    router.push("/story/new-story");
+    router.push("/(main)/generating");
   };
 
   return (
@@ -67,7 +91,11 @@ export default function HomeScreen() {
         </View>
 
         {/* Past Stories */}
-        {stories.length > 0 ? (
+        {isLoading ? (
+          <View className="mt-8 px-6 items-center">
+            <ActivityIndicator size="small" color="#FFB356" />
+          </View>
+        ) : stories.length > 0 ? (
           <View className="mt-8">
             <Text className="font-nunito-bold text-lg text-charcoal px-6 mb-3">
               Your stories
