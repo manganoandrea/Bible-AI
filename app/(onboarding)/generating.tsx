@@ -15,29 +15,46 @@ export default function GeneratingScreen() {
   const setProfile = useProfileStore((s) => s.setProfile);
   const [storyId, setStoryId] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
+
     async function setup() {
       if (!user || !ageBand || !companionType) return;
 
-      // Create profile
-      const profile = await createProfile({
-        userId: user.id,
-        childName: childName || undefined,
-        ageBand,
-        companionType,
-        companionName: companionName || undefined,
-        values,
-      });
-      setProfile(profile);
+      try {
+        // Create profile
+        const profile = await createProfile({
+          userId: user.id,
+          childName: childName || undefined,
+          ageBand,
+          companionType,
+          companionName: companionName || undefined,
+          values,
+        });
 
-      // Create story doc (triggers Cloud Function)
-      const id = await createStoryDoc(profile.id, "personalized");
-      setStoryId(id);
+        if (!isMounted) return;
+        setProfile(profile);
+
+        // Create story doc (triggers Cloud Function)
+        const id = await createStoryDoc(profile.id, "personalized");
+        if (!isMounted) return;
+        setStoryId(id);
+      } catch (err) {
+        console.error("Failed to create profile or story:", err);
+        if (isMounted) {
+          setError("Something went wrong. Please try again.");
+        }
+      }
     }
 
     setup();
-  }, [user, ageBand, companionType]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user, ageBand, companionType, childName, companionName, values, setProfile]);
 
   // Listen for story status changes
   useEffect(() => {
@@ -73,6 +90,12 @@ export default function GeneratingScreen() {
           isRealProgress={!!storyId}
           progress={progress}
         />
+
+        {error && (
+          <Text className="font-nunito text-red-500 text-center mt-4">
+            {error}
+          </Text>
+        )}
       </View>
     </SafeAreaView>
   );
