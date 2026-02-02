@@ -32,3 +32,34 @@ export async function uploadImageToStorage(
 
   return `https://storage.googleapis.com/${bucket.name}/${filePath}`;
 }
+
+/**
+ * Uploads base64-encoded audio to Firebase Storage.
+ *
+ * @param storyId - The unique identifier for the story
+ * @param audioName - The name of the audio file (e.g., "slide-1.mp3")
+ * @param audioBytes - The base64-encoded audio data
+ * @returns The public URL of the uploaded audio
+ */
+export async function uploadAudioToStorage(
+  storyId: string,
+  audioName: string,
+  audioBytes: string // base64
+): Promise<string> {
+  const bucket = storage.bucket();
+  const filePath = `stories/${storyId}/audio/${audioName}`;
+  const file = bucket.file(filePath);
+
+  const buffer = Buffer.from(audioBytes, "base64");
+
+  await file.save(buffer, {
+    metadata: {
+      contentType: "audio/mpeg",
+    },
+  });
+
+  // Make publicly accessible
+  await file.makePublic();
+
+  return `https://storage.googleapis.com/${bucket.name}/${filePath}`;
+}
