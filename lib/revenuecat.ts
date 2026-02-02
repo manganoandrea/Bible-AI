@@ -12,6 +12,10 @@ const API_KEYS = {
 export async function initRevenueCat(userId?: string): Promise<void> {
   const apiKey = Platform.OS === "ios" ? API_KEYS.ios : API_KEYS.android;
 
+  if (!apiKey) {
+    throw new Error(`RevenueCat API key not configured for ${Platform.OS}`);
+  }
+
   await Purchases.configure({
     apiKey,
     appUserID: userId,
@@ -20,7 +24,7 @@ export async function initRevenueCat(userId?: string): Promise<void> {
 
 export async function getOfferings(): Promise<PurchasesOffering | null> {
   const offerings = await Purchases.getOfferings();
-  return offerings.current;
+  return offerings?.current ?? null;
 }
 
 export async function getCustomerInfo(): Promise<CustomerInfo> {
@@ -32,7 +36,7 @@ export async function restorePurchases(): Promise<CustomerInfo> {
 }
 
 export function isPremium(customerInfo: CustomerInfo): boolean {
-  return customerInfo.entitlements.active["premium"] !== undefined;
+  return customerInfo?.entitlements?.active?.["premium"] !== undefined;
 }
 
 export async function identifyUser(userId: string): Promise<void> {
