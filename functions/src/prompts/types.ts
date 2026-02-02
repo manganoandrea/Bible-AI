@@ -9,3 +9,10 @@ export type Value =
   | "Forgiveness"
   | "Humility"
   | "Self-control";
+
+export type StoryStatus =
+  | "generating"
+  | "text_ready"
+  | "cover_ready"
+  | "ready"
+  | "failed";
