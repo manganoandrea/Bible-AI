@@ -12,6 +12,8 @@ import {
 } from "@expo-google-fonts/nunito";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
+import { useAuthStore } from "@/stores";
+import { onAuthChange, createOrGetUserDoc } from "@/lib/firebaseAuth";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -24,11 +26,38 @@ export default function RootLayout() {
     Nunito_800ExtraBold,
   });
 
+  const { setUser } = useAuthStore();
+
   useEffect(() => {
     if (fontsLoaded) {
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded]);
+
+  // Auth state listener - runs after fonts are loaded
+  useEffect(() => {
+    if (!fontsLoaded) return;
+
+    const unsubscribe = onAuthChange(async (firebaseUser) => {
+      if (firebaseUser) {
+        // Determine auth provider from Firebase user
+        const providerData = firebaseUser.providerData[0];
+        let provider: "apple" | "google" | "email" = "email";
+        if (providerData?.providerId === "apple.com") {
+          provider = "apple";
+        } else if (providerData?.providerId === "google.com") {
+          provider = "google";
+        }
+
+        const user = await createOrGetUserDoc(firebaseUser, provider);
+        setUser(user);
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [fontsLoaded, setUser]);
 
   if (!fontsLoaded) return null;
 
