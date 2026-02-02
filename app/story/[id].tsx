@@ -15,6 +15,7 @@ const MOCK_SLIDES: StorySlide[] = [
     imageUrl: "",
     imageStatus: "ready",
     audioUrl: "",
+    audioStatus: "ready",
     isChoicePoint: false,
   },
   {
@@ -23,6 +24,7 @@ const MOCK_SLIDES: StorySlide[] = [
     imageUrl: "",
     imageStatus: "ready",
     audioUrl: "",
+    audioStatus: "ready",
     isChoicePoint: false,
   },
   {
@@ -31,6 +33,7 @@ const MOCK_SLIDES: StorySlide[] = [
     imageUrl: "",
     imageStatus: "ready",
     audioUrl: "",
+    audioStatus: "ready",
     isChoicePoint: true,
     choices: [
       {
@@ -53,6 +56,7 @@ const MOCK_SLIDES: StorySlide[] = [
     imageUrl: "",
     imageStatus: "ready",
     audioUrl: "",
+    audioStatus: "ready",
     isChoicePoint: false,
   },
   {
@@ -61,6 +65,7 @@ const MOCK_SLIDES: StorySlide[] = [
     imageUrl: "",
     imageStatus: "ready",
     audioUrl: "",
+    audioStatus: "ready",
     isChoicePoint: false,
   },
   {
@@ -69,6 +74,7 @@ const MOCK_SLIDES: StorySlide[] = [
     imageUrl: "",
     imageStatus: "ready",
     audioUrl: "",
+    audioStatus: "ready",
     isChoicePoint: false,
   },
 ];

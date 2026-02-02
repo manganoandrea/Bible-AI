@@ -43,6 +43,7 @@ export interface StorySlide {
   imageUrl: string;
   imageStatus: "pending" | "generating" | "ready" | "failed";
   audioUrl: string;
+  audioStatus: "pending" | "generating" | "ready" | "failed";
   isChoicePoint: boolean;
   choices?: StoryChoice[];
 }
