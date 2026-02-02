@@ -1,6 +1,7 @@
 import * as admin from "firebase-admin";
-import { onDocumentCreated } from "firebase-functions/v2/firestore";
+import { onDocumentCreated, onDocumentUpdated } from "firebase-functions/v2/firestore";
 import { generateStory } from "./generateStory";
+import { generateSlideImages } from "./generateSlideImages";
 import { AgeBand, CompanionType, Value } from "./prompts/types";
 
 // Initialize Firebase Admin SDK
@@ -131,5 +132,49 @@ export const onStoryCreated = onDocumentCreated(
       console.error(`Failed to generate story ${storyId}:`, error);
       // Error handling is done in generateStory, but log here for visibility
     }
+  }
+);
+
+/**
+ * Firestore trigger that fires when a story document is updated.
+ * Generates slide images when status changes to "cover_ready".
+ */
+export const onStoryCoverReady = onDocumentUpdated(
+  { document: "stories/{storyId}", timeoutSeconds: 540, memory: "2GiB" },
+  async (event) => {
+    const before = event.data?.before.data();
+    const after = event.data?.after.data();
+
+    // Only trigger when status changes TO cover_ready
+    if (before?.status === "cover_ready" || after?.status !== "cover_ready") {
+      return;
+    }
+
+    // Get profile for companion info
+    const profileId = after.profileId;
+    if (!profileId) {
+      console.error("No profileId found on story");
+      return;
+    }
+
+    const profileSnap = await admin
+      .firestore()
+      .collection("profiles")
+      .doc(profileId)
+      .get();
+
+    if (!profileSnap.exists) {
+      console.error("Profile not found:", profileId);
+      return;
+    }
+
+    const profile = profileSnap.data()!;
+
+    await generateSlideImages({
+      storyId: event.params.storyId,
+      companionType: profile.companionType,
+      companionName: profile.companionName || profile.companionType,
+      childName: profile.childName || "the child",
+    });
   }
 );
