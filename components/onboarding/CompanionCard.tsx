@@ -1,4 +1,4 @@
-import { Pressable, Text, View } from "react-native";
+import { Pressable, Text, View, Image, ImageSourcePropType } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -15,11 +15,11 @@ interface CompanionCardProps {
   onPress: () => void;
 }
 
-const COMPANION_EMOJI: Record<CompanionType, string> = {
-  lamb: "🐑",
-  lion: "🦁",
-  donkey: "🫏",
-  horse: "🐴",
+const COMPANION_IMAGES: Record<CompanionType, ImageSourcePropType> = {
+  lamb: require("@/assets/images/companions/Lamb.png"),
+  lion: require("@/assets/images/companions/Lion.png"),
+  cat: require("@/assets/images/companions/Cat.png"),
+  fox: require("@/assets/images/companions/Fox.png"),
 };
 
 export function CompanionCard({
@@ -48,8 +48,11 @@ export function CompanionCard({
       }}
       onPress={onPress}
     >
-      {/* TODO: Replace emoji with watercolor companion illustration */}
-      <Text className="text-5xl mb-2">{COMPANION_EMOJI[type]}</Text>
+      <Image
+        source={COMPANION_IMAGES[type]}
+        className="w-20 h-20 mb-2"
+        resizeMode="contain"
+      />
       <Text className="font-nunito-bold text-base text-charcoal capitalize">
         {type}
       </Text>

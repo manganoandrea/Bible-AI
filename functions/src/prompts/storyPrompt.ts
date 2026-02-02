@@ -38,8 +38,8 @@ const AGE_BAND_GUIDELINES: Record<AgeBand, string> = {
 const COMPANION_PERSONALITIES: Record<CompanionType, string> = {
   lamb: "gentle, curious, sometimes timid but grows in confidence through friendship",
   lion: "brave, protective, learns that true strength comes from kindness",
-  donkey: "humble, hardworking, patient, often provides comic relief while teaching perseverance",
-  horse: "noble, swift, eager to help, learns the value of slowing down for others",
+  cat: "wise, patient, observant, loves learning and shares knowledge gently with quiet confidence",
+  fox: "adventurous, clever, curious explorer who finds creative solutions and loves discovery",
 };
 
 export function buildStoryPrompt(params: StoryPromptParams): string {

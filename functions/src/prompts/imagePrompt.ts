@@ -5,24 +5,25 @@ import { CompanionType } from "./types";
  * These ensure consistent character rendering across all illustrations.
  */
 export const COMPANION_DNA: Record<CompanionType, string> = {
-  lamb: `A small, fluffy white lamb with soft, woolly fur. Round, gentle eyes with long eyelashes.
-Small pink nose and tiny cloven hooves. Wears a simple golden bell on a ribbon around neck.
-Expression is sweet and innocent. Moves with a gentle, bouncy gait.`,
+  lamb: `A small, fluffy white lamb with soft woolly fur. Round gentle eyes with long eyelashes.
+Small pink nose and tiny cloven hooves. Wears a blue bow ribbon around neck.
+Expression is sweet and innocent. Semi-anthropomorphic, standing upright.
+Friendly mascot style, soft watercolor aesthetic.`,
 
   lion: `A young, friendly lion cub with a small golden mane just starting to grow.
 Warm amber eyes that sparkle with curiosity and kindness. Soft golden-tan fur.
-Round ears and a playful expression. Paws are slightly oversized giving an endearing appearance.
-Despite being a lion, appears gentle and approachable, never scary.`,
+Wears a cute blue vest with buttons. Paws are slightly oversized giving an endearing appearance.
+Semi-anthropomorphic, standing upright. Gentle and approachable, never scary.`,
 
-  donkey: `A small, sturdy donkey with soft gray fur and a cream-colored muzzle.
-Large, expressive brown eyes and long, floppy ears that move with emotions.
-Dark cross-marking on back and shoulders. Short fuzzy mane standing upright.
-Expression is patient and wise with a hint of playfulness. Wears a simple rope halter.`,
+  cat: `An orange tabby cat with warm ginger fur and cream chest.
+Large expressive eyes behind round scholarly glasses. Wears a cozy red scarf.
+Holds a scroll or book, suggesting wisdom and learning.
+Semi-anthropomorphic, standing upright. Patient and wise expression with quiet confidence.`,
 
-  horse: `A graceful young horse with a glossy chestnut coat and flowing auburn mane and tail.
-Bright, intelligent brown eyes with a white star marking on forehead.
-Elegant but not intimidating - sized appropriately to appear friendly to children.
-Moves with gentle confidence. Expression shows warmth and eagerness to help.`,
+  fox: `A friendly orange fox with bright russet fur and white chest and muzzle.
+Warm brown eyes with a clever, friendly expression. Fluffy tail with white tip.
+Wears a brown leather messenger satchel for adventures.
+Semi-anthropomorphic, standing upright. Adventurous and curious, always ready to explore.`,
 };
 
 interface ImagePromptParams {
