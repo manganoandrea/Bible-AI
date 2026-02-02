@@ -62,7 +62,12 @@ export default function GeneratingScreen() {
     if (!storyId) return;
 
     const unsubscribe = onStoryStatusChange(storyId, async (status) => {
-      if (status === "cover_ready" || status === "ready") {
+      // Update progress based on status
+      if (status === "generating") {
+        setProgress(0.25);
+      } else if (status === "text_ready") {
+        setProgress(0.5);
+      } else if (status === "cover_ready" || status === "ready") {
         // Fetch the story and set it in the store
         const story = await getStory(storyId);
         if (story) {
@@ -70,7 +75,7 @@ export default function GeneratingScreen() {
           setProgress(1);
         }
       } else if (status === "failed") {
-        // TODO: Handle failure — show retry
+        setError("Story generation failed. Please try again.");
         setProgress(0);
       }
     });

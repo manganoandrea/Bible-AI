@@ -2,10 +2,10 @@ import { View, Text } from "react-native";
 import { useEffect, useState, useRef } from "react";
 
 const STEPS = [
-  "Setting your Companion",
-  "Loading illustrations",
-  "Getting the narrator ready",
-  "Building your story paths",
+  "Creating your story",
+  "Writing the narrative",
+  "Painting the cover",
+  "Ready to read!",
 ];
 
 const DELIGHT_LINES = [
