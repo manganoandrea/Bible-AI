@@ -38,25 +38,46 @@ export default function RootLayout() {
   useEffect(() => {
     if (!fontsLoaded) return;
 
-    const unsubscribe = onAuthChange(async (firebaseUser) => {
-      if (firebaseUser) {
-        // Determine auth provider from Firebase user
-        const providerData = firebaseUser.providerData[0];
-        let provider: "apple" | "google" | "email" = "email";
-        if (providerData?.providerId === "apple.com") {
-          provider = "apple";
-        } else if (providerData?.providerId === "google.com") {
-          provider = "google";
-        }
+    let isMounted = true;
+    let currentUserId: string | null = null;
 
-        const user = await createOrGetUserDoc(firebaseUser, provider);
-        setUser(user);
+    const unsubscribe = onAuthChange(async (firebaseUser) => {
+      const userId = firebaseUser?.uid ?? null;
+      currentUserId = userId;
+
+      if (firebaseUser) {
+        try {
+          const providerData = firebaseUser.providerData?.[0];
+          const provider: "apple" | "google" | "email" =
+            providerData?.providerId?.includes("apple")
+              ? "apple"
+              : providerData?.providerId?.includes("google")
+                ? "google"
+                : "email";
+
+          const user = await createOrGetUserDoc(firebaseUser, provider);
+
+          // Only update if this is still the current user and component is mounted
+          if (isMounted && currentUserId === userId) {
+            setUser(user);
+          }
+        } catch (error) {
+          console.error("Failed to initialize user:", error);
+          if (isMounted && currentUserId === userId) {
+            setUser(null);
+          }
+        }
       } else {
-        setUser(null);
+        if (isMounted) {
+          setUser(null);
+        }
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
   }, [fontsLoaded, setUser]);
 
   if (!fontsLoaded) return null;
